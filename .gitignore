@@ -1,0 +1,10 @@
+/build*/
+/out/
+/tests/.cache/
+__pycache__/
+*.pyc
+.pytest_cache/
+.vs/
+.vscode/
+CMakeUserPresets.json
+/dist/
