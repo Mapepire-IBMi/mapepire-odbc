@@ -1,0 +1,94 @@
+name: Build
+
+# Builds the driver for Windows and Linux and uploads ready-to-install packages.
+# Pushing a tag like v1.2.3 also attaches the packages to a GitHub release.
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    name: Windows ${{ matrix.arch }}
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            cmake_arch: x64
+          - arch: x86
+            cmake_arch: Win32
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -S . -B build -A ${{ matrix.cmake_arch }} -DMAPEPIRE_BUILD_TESTS=OFF
+      - name: Build
+        run: cmake --build build --config Release
+      - name: Package
+        shell: pwsh
+        run: |
+          $dir = "mapepire-odbc-windows-${{ matrix.arch }}"
+          New-Item -ItemType Directory $dir | Out-Null
+          Copy-Item build\Release\mapepireodbc.dll, README.md, LICENSE, docs\EXCEL.md, scripts\register-windows.ps1 $dir
+          Compress-Archive -Path $dir -DestinationPath "$dir.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mapepire-odbc-windows-${{ matrix.arch }}
+          path: mapepire-odbc-windows-${{ matrix.arch }}.zip
+          if-no-files-found: error
+
+  linux:
+    name: Linux ${{ matrix.arch }}
+    # Ubuntu 22.04 keeps the glibc requirement low enough for most current distributions.
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            runner: ubuntu-22.04
+          - arch: arm64
+            runner: ubuntu-22.04-arm
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install unixODBC and OpenSSL development files
+        run: sudo apt-get update && sudo apt-get install -y unixodbc-dev libssl-dev
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DMAPEPIRE_BUILD_TESTS=OFF
+      - name: Build
+        run: cmake --build build -j
+      - name: Package
+        run: |
+          dir=mapepire-odbc-linux-${{ matrix.arch }}
+          mkdir "$dir"
+          cp build/libmapepireodbc.so README.md LICENSE scripts/odbcinst.ini.template "$dir/"
+          tar czf "$dir.tar.gz" "$dir"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mapepire-odbc-linux-${{ matrix.arch }}
+          path: mapepire-odbc-linux-${{ matrix.arch }}.tar.gz
+          if-no-files-found: error
+
+  release:
+    name: Publish release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [windows, linux]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --generate-notes
