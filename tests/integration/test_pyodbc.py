@@ -284,11 +284,11 @@ def test_parameter_count_mismatch(cn):
 
 def test_transactions_and_autocommit_toggle(connstr, unique):
     c = pyodbc.connect(connstr(), autocommit=True)
+    c.autocommit = False  # reconnects with "auto commit=false"
+    assert c.autocommit is False
     cur = c.cursor()
     cur.execute(f"CREATE SCHEMA X{unique}")
     cur.execute(f"CREATE TABLE X{unique}.T (A INTEGER)")
-    c.autocommit = False  # reconnects with "auto commit=false"
-    assert c.autocommit is False
     cur = c.cursor()
     cur.execute(f"INSERT INTO X{unique}.T VALUES (1)")
     c.commit()
