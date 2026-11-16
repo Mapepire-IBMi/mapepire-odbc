@@ -1,0 +1,60 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build (MSVC)
+        run: |
+          cmake -S . -B build -A x64
+          cmake --build build --config Release
+      - name: Unit tests
+        run: ctest --test-dir build -C Release --output-on-failure
+      - name: Integration tests (Mapepire mock server v0.2.0)
+        env:
+          MAPEPIRE_ODBC_DRIVER: ${{ github.workspace }}\build\Release\mapepireodbc.dll
+        run: |
+          pip install -r tests/requirements.txt
+          python -m pytest tests/integration -v
+
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install unixODBC and OpenSSL
+        run: sudo apt-get update && sudo apt-get install -y unixodbc unixodbc-dev libssl-dev
+      - name: Build
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo
+          cmake --build build -j
+      - name: Unit tests
+        run: ctest --test-dir build --output-on-failure
+      - name: Integration tests (Mapepire mock server v0.2.0)
+        env:
+          MAPEPIRE_ODBC_DRIVER: ${{ github.workspace }}/build/libmapepireodbc.so
+        run: |
+          pip install -r tests/requirements.txt
+          python -m pytest tests/integration -v
