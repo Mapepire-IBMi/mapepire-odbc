@@ -29,9 +29,16 @@ jobs:
       - name: Integration tests (Mapepire mock server v0.2.0)
         env:
           MAPEPIRE_ODBC_DRIVER: ${{ github.workspace }}\build\Release\mapepireodbc.dll
+          MAPEPIRE_ODBC_TRACE: ${{ runner.temp }}\mapepire-odbc-trace.log
         run: |
           pip install -r tests/requirements.txt
           python -m pytest tests/integration -v
+      - name: Upload the driver protocol trace
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: odbc-trace-windows
+          path: ${{ runner.temp }}/mapepire-odbc-trace.log
 
   linux:
     runs-on: ubuntu-latest
@@ -55,6 +62,13 @@ jobs:
       - name: Integration tests (Mapepire mock server v0.2.0)
         env:
           MAPEPIRE_ODBC_DRIVER: ${{ github.workspace }}/build/libmapepireodbc.so
+          MAPEPIRE_ODBC_TRACE: ${{ runner.temp }}/mapepire-odbc-trace.log
         run: |
           pip install -r tests/requirements.txt
           python -m pytest tests/integration -v
+      - name: Upload the driver protocol trace
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: odbc-trace-linux
+          path: ${{ runner.temp }}/mapepire-odbc-trace.log
