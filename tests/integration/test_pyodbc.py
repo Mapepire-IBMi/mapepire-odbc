@@ -5,6 +5,7 @@ in-memory SQLite database, which is shared by every connection.
 """
 import datetime
 import decimal
+import sys
 import threading
 
 import pyodbc
@@ -282,6 +283,8 @@ def test_parameter_count_mismatch(cn):
         cn.cursor().execute("SELECT * FROM SAMPLE.DEPARTMENT WHERE ADMRDEPT = ?")
 
 
+@pytest.mark.skipif(sys.platform != "win32",
+                    reason="unixODBC reuses pooled connections with stale cursors; see issue #2")
 def test_transactions_and_autocommit_toggle(connstr, unique):
     c = pyodbc.connect(connstr(), autocommit=True)
     c.autocommit = False  # reconnects with "auto commit=false"
