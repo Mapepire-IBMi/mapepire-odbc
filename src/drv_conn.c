@@ -429,8 +429,10 @@ static int has_open_results(mapepire_dbc *_d)
 {
     int open = 0;
     mapepire_mutex_lock(&_d->lock);
+    /* Only server cursors are lost by a reconnect; result sets the driver builds
+     * itself (SQLGetTypeInfo, catalog enumerations) have no server cursor. */
     for (mapepire_stmt *s = _d->stmts; s && !open; s = s->next)
-        if (s->has_result || s->state == MAPEPIRE_ST_NEED_DATA) open = 1;
+        if ((s->has_result && s->cursor[0]) || s->state == MAPEPIRE_ST_NEED_DATA) open = 1;
     mapepire_mutex_unlock(&_d->lock);
     return open;
 }
