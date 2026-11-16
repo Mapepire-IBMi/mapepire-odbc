@@ -1,0 +1,58 @@
+{
+  "include_defaults": true,
+  "sql": [
+    {
+      "pattern": "select current server from sysibm\\.sysdummy1",
+      "columns": [ { "name": "00001", "type": "VARCHAR", "precision": 18 } ],
+      "rows": [ ["MOCKDB"] ]
+    },
+    {
+      "pattern": "select \\* from odbctest\\.precise",
+      "columns": [
+        { "name": "BIG", "type": "DECIMAL", "precision": 31, "scale": 9, "nullable": 0 },
+        { "name": "TINY", "type": "DECIMAL", "precision": 15, "scale": 9, "nullable": 1 },
+        { "name": "NUM", "type": "NUMERIC", "precision": 5, "scale": 2, "nullable": 1 }
+      ],
+      "rows": [
+        [12345678901234567890.123456789, 1E-7, 123.45],
+        [-0.5, null, -999.99]
+      ]
+    },
+    {
+      "pattern": "select \\* from odbctest\\.typed",
+      "columns": [
+        { "name": "I", "type": "INTEGER", "nullable": 0 },
+        { "name": "SI", "type": "SMALLINT" },
+        { "name": "BI", "type": "BIGINT" },
+        { "name": "DBL", "type": "DOUBLE" },
+        { "name": "C", "type": "CHAR", "precision": 10 },
+        { "name": "VC", "type": "VARCHAR", "precision": 40 },
+        { "name": "D", "type": "DATE" },
+        { "name": "T", "type": "TIME" },
+        { "name": "TS", "type": "TIMESTAMP", "precision": 26, "scale": 6 },
+        { "name": "BO", "type": "BOOLEAN" },
+        { "name": "BIN", "type": "VARCHAR () FOR BIT DATA", "precision": 8 }
+      ],
+      "rows": [
+        [42, -7, 9007199254740993, 2.5, "ABC", "héllo wörld ☃", "2024-02-29", "13.45.30", "2024-02-29 13:45:30.123456", true, "DEADBEEF"],
+        [-1, null, null, null, null, null, null, null, null, false, null]
+      ]
+    },
+    {
+      "pattern": "select \\* from odbctest\\.lob",
+      "columns": [ { "name": "DOC", "type": "BLOB", "precision": 1048576 } ],
+      "rows": [ [ { "blob_url": "/blob/odbc-test-token", "size": 3 } ] ]
+    },
+    {
+      "pattern": "call odbctest\\.get_total\\(\\?, \\?\\)",
+      "update_count": 0,
+      "output_parms": [
+        { "index": 2, "type": "DECIMAL", "precision": 11, "scale": 2, "name": "TOTAL", "value": 1234.50 }
+      ]
+    },
+    {
+      "pattern": "drop table odbctest\\.protected",
+      "error": { "message": "[SQL0551] Not authorized to object PROTECTED in ODBCTEST type *FILE.", "sql_state": "42501", "sql_rc": -551 }
+    }
+  ]
+}

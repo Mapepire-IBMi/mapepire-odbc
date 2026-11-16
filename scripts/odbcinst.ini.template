@@ -1,0 +1,18 @@
+# Register the driver with unixODBC:
+#   sudo odbcinst -i -d -f odbcinst.ini     (after fixing the path below)
+# or copy the section into /etc/odbcinst.ini.
+
+[Mapepire ODBC Driver]
+Description = Mapepire ODBC driver for Db2 for IBM i
+Driver      = /usr/local/lib/libmapepireodbc.so
+FileUsage   = 0
+DriverODBCVer = 03.80
+
+# Example DSN for ~/.odbc.ini or /etc/odbc.ini:
+#
+# [MyIBMi]
+# Driver     = Mapepire ODBC Driver
+# Server     = myibmi.example.com
+# Port       = 8076
+# CertSHA256 = 21:37:DA:8C:...
+# Props      = naming=system;libraries=MYLIB
